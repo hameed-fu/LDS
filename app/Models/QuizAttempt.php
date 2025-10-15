@@ -13,6 +13,9 @@ class QuizAttempt extends Model {
         return $this->belongsTo(Quiz::class);
     }
 
+     protected $casts = [
+        'attempted_at' => 'datetime',
+    ];
     public function user(): BelongsTo {
         return $this->belongsTo(User::class);
     }

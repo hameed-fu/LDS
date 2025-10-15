@@ -2,14 +2,16 @@
 
 use App\Models\Course;
 use App\Models\User;
+use App\Models\Language;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
 use Illuminate\Database\Eloquent\Builder;
 use Mary\Traits\Toast;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 
 new class extends Component {
-    use Toast, WithPagination;
+    use Toast, WithPagination, WithFileUploads;
 
     #[Url]
     public string $search = '';
@@ -21,38 +23,41 @@ new class extends Component {
     public string $description = '';
     public string $level = 'beginner';
     public int $created_by = 0;
+    public ?int $language_id = null;
+    public $image = null;
+    public ?string $existingImage = null;
 
     // Levels options
     public function levels(): array
     {
-        return [
-            ['id' => 'beginner', 'name' => 'Beginner'],
-            ['id' => 'intermediate', 'name' => 'Intermediate'],
-            ['id' => 'advanced', 'name' => 'Advanced'],
-        ];
+        return [['id' => 'beginner', 'name' => 'Beginner'], ['id' => 'intermediate', 'name' => 'Intermediate'], ['id' => 'advanced', 'name' => 'Advanced']];
     }
 
     // Instructor options
     public function instructors(): array
     {
-        $list = User::where('role', 'teacher')
-        ->select('id as id', 'name as name')
-        ->get()
-        ->toArray();
+        $list = User::where('role', 'instructor')->select('id as id', 'name as name')->get()->toArray();
 
-    return array_merge([['id' => '', 'name' => 'Please select']], $list);
+        return array_merge([['id' => '', 'name' => 'Please select']], $list);
+    }
 
+    public function languages(): array
+    {
+        $list = Language::select('id', 'name')->get()->toArray();
+        return array_merge([['id' => '', 'name' => 'Please select']], $list);
     }
 
     // Fetch courses with search
     public function courses()
     {
-        return Course::with('instructor')
+        return Course::with(['instructor', 'language'])
             ->when(
                 $this->search,
-                fn (Builder $q) => $q->where('title', 'like', "%$this->search%")
+                fn(Builder $q) => $q
+                    ->where('title', 'like', "%$this->search%")
                     ->orWhere('description', 'like', "%$this->search%")
                     ->orWhere('level', 'like', "%$this->search%")
+                    ->orWhereHas('language', fn($l) => $l->where('name', 'like', "%$this->search%")),
             )
             ->paginate(20);
     }
@@ -72,6 +77,8 @@ new class extends Component {
         $this->description = $course->description;
         $this->level = $course->level;
         $this->created_by = $course->created_by;
+        $this->language_id = $course->language_id;
+        $this->existingImage = $course->image;
         $this->myModal = true;
     }
 
@@ -83,19 +90,43 @@ new class extends Component {
             'description' => 'required|string',
             'level' => 'required|in:beginner,intermediate,advanced',
             'created_by' => 'required|exists:users,id',
+            'language_id' => 'nullable|exists:languages,id',
+            'image' => 'nullable|image|max:2048',
         ]);
 
         $course = $this->courseId ? Course::findOrFail($this->courseId) : new Course();
-        $course->fill($data);
+
+        // Fill only the non-file fields
+        $course->fill([
+            'title' => $this->title,
+            'description' => $this->description,
+            'level' => $this->level,
+            'created_by' => $this->created_by,
+            'language_id' => $this->language_id,
+        ]);
+
+        // Handle image
+        if ($this->image) {
+            // Delete old image if exists
+            if ($this->existingImage && \Storage::disk('public')->exists($this->existingImage)) {
+                \Storage::disk('public')->delete($this->existingImage);
+            }
+
+            $imagePath = $this->image->store('courses', 'public');
+            $course->image = $imagePath;
+        } else {
+            // Keep existing image if editing and no new upload
+            if ($this->courseId && $this->existingImage) {
+                $course->image = $this->existingImage;
+            }
+        }
+
         $course->save();
 
         $this->resetForm();
         $this->myModal = false;
 
-        $this->success(
-            title: 'Course saved!',
-            description: $this->courseId ? 'Course updated successfully.' : 'New course created.'
-        );
+        $this->success(title: 'Course saved!', description: $this->courseId ? 'Course updated successfully.' : 'New course created.');
     }
 
     // Delete
@@ -116,31 +147,27 @@ new class extends Component {
     // Reset form
     public function resetForm(): void
     {
-        $this->reset(['courseId', 'title', 'description', 'level', 'created_by']);
+        $this->reset(['courseId', 'title', 'description', 'level', 'created_by', 'language_id', 'image', 'existingImage']);
+
         $this->level = 'beginner';
     }
 
     // Data for Blade
     public function with(): array
     {
-        $headers = [
-            ['key' => 'id', 'label' => '#'],
-            ['key' => 'title', 'label' => 'Title'],
-            ['key' => 'description', 'label' => 'Description'],
-            ['key' => 'level', 'label' => 'Level'],
-            ['key' => 'instructor.name', 'label' => 'Instructor'],
-        ];
+        $headers = [['key' => 'id', 'label' => '#'], ['key' => 'image', 'label' => 'Image'], ['key' => 'title', 'label' => 'Title'], ['key' => 'description', 'label' => 'Description'], ['key' => 'level', 'label' => 'Level'], ['key' => 'instructor.name', 'label' => 'Instructor'], ['key' => 'language.name', 'label' => 'Language']];
 
         return [
             'courses' => $this->courses(),
             'levels' => $this->levels(),
             'instructors' => $this->instructors(),
+            'languages' => $this->languages(),
             'headers' => $headers,
         ];
     }
 };
 ?>
- 
+
 
 <div>
     <x-header title="Courses" separator progress-indicator />
@@ -158,6 +185,16 @@ new class extends Component {
     {{-- Courses Table --}}
     <x-card class="!p-0 sm:!p-2" shadow>
         <x-table :headers="$headers" :rows="$courses" striped hoverable with-pagination>
+
+            @scope('cell_image', $course)
+                @if ($course->image)
+                    <img src="{{ asset('storage/' . $course->image) }}" alt="Course Image"
+                        class="w-16 h-16 object-cover rounded-md mx-auto" />
+                @else
+                    <span class="text-gray-400 italic">No Image</span>
+                @endif
+            @endscope
+
             {{-- Level --}}
             @scope('level', $course)
                 <x-badge :label="ucfirst($course->level)" class="px-2 py-1 text-sm" />
@@ -177,9 +214,7 @@ new class extends Component {
         {{-- Empty state --}}
         @if ($courses->isEmpty())
             <x-alert title="No courses found" description="Try adjusting or clearing your filters."
-                icon="o-exclamation-triangle" class="bg-base-100 border-none  mt-4">
-                 
-            </x-alert>
+                icon="o-exclamation-triangle" class="bg-base-100 border-none mt-4" />
         @endif
     </x-card>
 
@@ -189,6 +224,21 @@ new class extends Component {
         <x-textarea label="Description" wire:model.defer="description" rows="3" />
         <x-select label="Level" wire:model.defer="level" :options="$levels" />
         <x-select label="Instructor" wire:model.defer="created_by" :options="$instructors" />
+        <x-select label="Language" wire:model.defer="language_id" :options="$languages" />
+
+        <div class="mt-3">
+            <x-file label="Course Image" type="file" wire:model="image" accept="image/*" />
+
+            {{-- Preview new image --}}
+            @if ($image)
+                <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="w-24 h-24 rounded-md mt-2 object-cover" />
+                {{-- Show existing image if editing --}}
+            @elseif ($existingImage)
+                <img src="{{ asset('storage/' . $existingImage) }}" alt="Current Image"
+                    class="w-24 h-24 rounded-md mt-2 object-cover border" />
+            @endif
+        </div>
+
 
         <x-slot:actions>
             <x-button label="Cancel" @click="$wire.myModal = false" />
@@ -197,6 +247,5 @@ new class extends Component {
     </x-modal>
 
     {{-- Floating Add Button --}}
-    <x-button icon="o-plus" class="btn-circle btn-primary btn-lg fixed bottom-6 right-6"
-        @click="$wire.create()" />
+    <x-button icon="o-plus" class="btn-circle btn-primary btn-lg fixed bottom-6 right-6" @click="$wire.create()" />
 </div>

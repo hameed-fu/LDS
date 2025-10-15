@@ -12,13 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('enrollments', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('course_id')->constrained()->cascadeOnDelete();
-    $table->timestamp('enrolled_at')->useCurrent();
-    $table->timestamps();
-});
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('course_id')->constrained()->cascadeOnDelete();
+            $table->timestamp('enrolled_at')->useCurrent();
+            $table->enum('status', ['in_progress', 'completed'])->default('in_progress');
+            $table->integer('progress')->default(0);
 
+            $table->timestamps();
+        });
     }
 
     /**

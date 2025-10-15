@@ -60,4 +60,10 @@ class User extends Authenticatable
             get: fn(?string $value) => ucfirst(str($this->name)->explode(' ')->first())
         );
     }
+
+    public function enrollments()
+{
+    return $this->hasMany(\App\Models\Enrollment::class);
+}
+
 }

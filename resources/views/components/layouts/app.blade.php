@@ -24,10 +24,7 @@
             <x-app-brand />
         </x-slot:brand>
 
-        <x-slot:actions>
-            <x-button label="Messages" icon="o-envelope" link="###" class="btn-ghost btn-sm" responsive />
-            <x-button label="Notifications" icon="o-bell" link="###" class="btn-ghost btn-sm" responsive />
-        </x-slot:actions>
+       
     </x-nav>
 
     {{-- Main Content with sidebar/drawer --}}
@@ -60,6 +57,7 @@
 
                 {{-- Course Management --}}
                 <x-menu-sub title="Courses" icon="o-book-open">
+                    <x-menu-item title="Languages" icon="o-book-open" link="{{ route('languages.index') }}" />
                     <x-menu-item title="Courses" icon="o-book-open" link="{{ route('course.index') }}" />
                     <x-menu-item title="Lessons" icon="o-clipboard-document" link="{{ route('lessons.index') }}" />
                     <x-menu-item title="Exercises" icon="o-academic-cap" link="{{ route('exercises.index') }}" />

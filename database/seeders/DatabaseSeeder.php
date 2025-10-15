@@ -17,24 +17,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Category::factory(5)->create();
+        // Category::factory(5)->create();
 
-        $users = User::factory(200)->create();
+        $users = User::factory(10)->create();
 
         // Make sure things get shuffled
-        $users->each(function (User $user) {
-            Post::factory(3)
-                ->for($user, 'author')
-                ->state(new Sequence(
-                    ['updated_at' => fake()->dateTimeThisYear],
-                    ['updated_at' => fake()->dateTimeThisYear],
-                    ['updated_at' => fake()->dateTimeThisYear],
-                ))
-                ->create();
+        // $users->each(function (User $user) {
+        //     Post::factory(3)
+        //         ->for($user, 'author')
+        //         ->state(new Sequence(
+        //             ['updated_at' => fake()->dateTimeThisYear],
+        //             ['updated_at' => fake()->dateTimeThisYear],
+        //             ['updated_at' => fake()->dateTimeThisYear],
+        //         ))
+        //         ->create();
 
-            Comment::factory(7)
-                ->for($user, 'author')
-                ->create();
-        });
+        //     Comment::factory(7)
+        //         ->for($user, 'author')
+        //         ->create();
+        // });
     }
 }

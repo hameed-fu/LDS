@@ -20,4 +20,6 @@ class Lesson extends Model {
     public function quizzes(): HasMany {
         return $this->hasMany(Quiz::class);
     }
+
+    
 }

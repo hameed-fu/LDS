@@ -7,7 +7,8 @@ use Illuminate\Support\Collection;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
 
-new class extends Component {
+new #[Layout('components.layouts.guest')] #[Title('Postsj')] class extends Component {
+
     #[Url]
     public string $search = '';
 

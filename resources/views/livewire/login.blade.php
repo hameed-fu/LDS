@@ -10,21 +10,42 @@ use Livewire\Attributes\Title;
 
 new #[Layout('components.layouts.guest')] #[Title('Login')] class extends Component {
     use Toast;
-    #[Url]
-    public string $redirect_url = '';
+
+    #[Rule('required|email')]
+    public string $email = '';
+
+    #[Rule('required')]
+    public string $password = '';
+
+    public function mount()
+    {
+        if (auth()->check()) {
+            $user = auth()->user();
+            if (auth()->user()->role == 'admin') {
+                return redirect(route('dashboard'));
+            } else {
+                return redirect(route('/'));
+            }
+        }
+    }
 
     public function login()
     {
-        
-        $user = User::inRandomOrder()->first();
+        $credentials = $this->validate();
 
-        Auth::login($user);
+        if (auth()->attempt($credentials)) {
+            request()->session()->regenerate();
 
-        request()->session()->regenerate();
+            $user = auth()->user();
 
-        return redirect()->intended($this->redirect_url);
+            return $user->role === 'admin' ? redirect()->route('dashboard') : redirect()->route('home');
+        }
+
+        $this->addError('email', 'The provided credentials do not match our records.');
     }
-}; ?>
+};
+
+?>
 
 <div>
     <div class="ma ">

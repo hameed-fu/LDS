@@ -26,7 +26,7 @@ new class extends Component {
     // Roles options
     public function roles(): array
     {
-        return [['id' => 'admin', 'name' => 'Admin'], ['id' => 'teacher', 'name' => 'Teacher'], ['id' => 'student', 'name' => 'Student']];
+        return [['id' => 'admin', 'name' => 'Admin'], ['id' => 'instructor', 'name' => 'tnstructor'], ['id' => 'student', 'name' => 'Student']];
     }
 
     // Fetch users with search
@@ -73,7 +73,7 @@ new class extends Component {
             'email' => 'required|email|unique:users,email,' . $this->userId,
             'username' => 'required|string|min:3|unique:users,username,' . $this->userId,
             'password' => $this->userId ? 'nullable|min:6' : 'required|min:6',
-            'role' => 'required|in:admin,teacher,student',
+            'role' => 'required|in:admin,instructor,student',
         ]);
 
         $user = $this->userId ? User::findOrFail($this->userId) : new User();
