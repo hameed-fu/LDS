@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('enrollments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('course_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('course_id')->nullable();
             $table->timestamp('enrolled_at')->useCurrent();
             $table->enum('status', ['in_progress', 'completed'])->default('in_progress');
             $table->integer('progress')->default(0);

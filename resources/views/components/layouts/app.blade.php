@@ -49,13 +49,14 @@
                 {{-- User Management --}}
                 <x-menu-sub title="User Management" icon="o-user">
                     <x-menu-item title="Users" icon="o-user" link="{{ route('user.index') }}" />
-                    <x-menu-item title="Enrollments" icon="o-user" link="{{ route('enrollments.index') }}" />
-                    <x-menu-item title="Certificates" icon="o-user" link="{{ route('certificates.index') }}" />
+                    <x-menu-item title="Class Enrollments" icon="o-user-group" link="{{ route('enrollments.index') }}" />
+                    {{-- <x-menu-item title="Certificates" icon="user" link="{{ route('certificates.index') }}" /> --}}
                 </x-menu-sub>
 
                 <x-menu-separator />
 
-                {{-- Course Management --}}
+                {{-- Legacy Course Management (Hidden - No longer in use) --}}
+                {{-- 
                 <x-menu-sub title="Courses" icon="o-book-open">
                     <x-menu-item title="Languages" icon="o-book-open" link="{{ route('languages.index') }}" />
                     <x-menu-item title="Courses" icon="o-book-open" link="{{ route('course.index') }}" />
@@ -64,6 +65,7 @@
                 </x-menu-sub>
 
                 <x-menu-separator />
+                --}}
 
                 {{-- Quiz Management --}}
                 <x-menu-sub title="Quizzes" icon="o-question-mark-circle">
@@ -71,6 +73,19 @@
                     <x-menu-item title="Questions" icon="o-chat-bubble-left-right" link="{{ route('questions.index') }}" />
                     <x-menu-item title="Options" icon="o-list-bullet" link="{{ route('options.index') }}" />
                     <x-menu-item title="Quiz Attempts" icon="o-pencil-square" link="{{ route('quiz_attempts') }}" />
+                </x-menu-sub>
+
+                <x-menu-separator />
+
+                {{-- Virtual Classroom --}}
+                <x-menu-sub title="Virtual Classroom" icon="o-video-camera">
+                    <x-menu-item title="Classes" icon="o-academic-cap" link="{{ route('classes.index') }}" />
+                    <x-menu-item title="Live Sessions" icon="o-video-camera" link="{{ route('live-sessions.index') }}" />
+                    <x-menu-item title="Assignments" icon="o-document" link="{{ route('assignments.index') }}" />
+                    <x-menu-item title="Submissions" icon="o-arrow-up-tray" link="{{ route('submissions.index') }}" />
+                    <x-menu-item title="Attendance" icon="o-check-circle" link="{{ route('attendance.index') }}" />
+                    <x-menu-item title="Study Groups" icon="o-users" link="{{ route('study-groups.index') }}" />
+                    <x-menu-item title="Notifications" icon="o-bell" link="{{ route('notifications.index') }}" />
                 </x-menu-sub>
             </x-menu>
         </x-slot:sidebar>

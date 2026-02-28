@@ -2,7 +2,7 @@
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
 
         <a href="/" class="logo d-flex align-items-center me-auto">
-            <h1 class="sitename">LDS</h1>
+            <h1 class="sitename">Virtual Class Room</h1>
         </a>
 
         <nav id="navmenu" class="navmenu">
@@ -14,8 +14,8 @@
                     <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">About</a>
                 </li>
                 <li>
-                    <a href="{{ route('site.courses') }}"
-                        class="{{ request()->routeIs('site.courses') ? 'active' : '' }}">Courses</a>
+                    <a href="{{ route('site.classes') }}"
+                        class="{{ request()->routeIs('site.classes') ? 'active' : '' }}">Virtual Classes</a>
                 </li>
                 <li>
                     <a href="{{ route('contact') }}"
@@ -63,9 +63,15 @@
                                 <i class="bi bi-journal-text me-1"></i> My Courses
                             </a>
                         </li>
- <li>
+                        <li>
                             <a class="dropdown-item" href="{{ route('student.my_quiz_attempts') }}">
                                 <i class="bi bi-question me-1"></i> My Quizes
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item" href="{{ route('student.certificates') }}">
+                                <i class="bi bi-journal-text me-1"></i> My Certificates
                             </a>
                         </li>
                         <li>

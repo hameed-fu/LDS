@@ -62,8 +62,46 @@ class User extends Authenticatable
     }
 
     public function enrollments()
+    {
+        return $this->hasMany(\App\Models\Enrollment::class);
+    }
+
+    public function classesTeaching()
+    {
+        return $this->hasMany(VirtualClass::class, 'teacher_id');
+    }
+
+    public function classEnrollments()
+    {
+        return $this->hasMany(ClassEnrollment::class, 'student_id');
+    }
+
+    public function attendance()
+    {
+        return $this->hasMany(Attendance::class, 'student_id');
+    }
+
+    public function sessionParticipations()
+    {
+        return $this->hasMany(SessionParticipant::class, 'user_id');
+    }
+
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class, 'student_id');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
+public function isTeacherOf($classId)
 {
-    return $this->hasMany(\App\Models\Enrollment::class);
+    return $this->virtualClasses()->where('virtual_classes.id', $classId)->exists();
 }
 
+public function isEnrolledIn($classId)
+{
+    return $this->enrollments()->where('class_id', $classId)->exists();
+}
 }

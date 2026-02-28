@@ -19,7 +19,11 @@ class DatabaseSeeder extends Seeder
     {
         // Category::factory(5)->create();
 
-        $users = User::factory(10)->create();
+        // $users = User::factory(10)->create();
+
+        $this->call([
+            UserSeeder::class
+        ]);
 
         // Make sure things get shuffled
         // $users->each(function (User $user) {

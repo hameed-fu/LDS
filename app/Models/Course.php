@@ -30,4 +30,9 @@ class Course extends Model
     {
         return $this->belongsTo(Language::class);
     }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(Enrollment::class);
+    }
 }

@@ -13,11 +13,11 @@ class PostFactory extends Factory
 
     public function definition()
     {
-        return [
-            'category_id' => Category::inRandomOrder()->first(),
-            'author_id' => User::factory(),
-            'title' => $this->faker->sentence(4),
-            'body' => $this->faker->text(800)
-        ];
+        // return [
+        //     'category_id' => Category::inRandomOrder()->first(),
+        //     'author_id' => User::factory(),
+        //     'title' => $this->faker->sentence(4),
+        //     'body' => $this->faker->text(800)
+        // ];
     }
 }

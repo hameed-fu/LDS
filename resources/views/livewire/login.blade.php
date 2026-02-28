@@ -21,11 +21,9 @@ new #[Layout('components.layouts.guest')] #[Title('Login')] class extends Compon
     {
         if (auth()->check()) {
             $user = auth()->user();
-            if (auth()->user()->role == 'admin') {
-                return redirect(route('dashboard'));
-            } else {
-                return redirect(route('/'));
-            }
+            return $user->role == 'admin'
+                ? redirect()->route('dashboard')
+                : redirect()->route('home');
         }
     }
 
@@ -38,7 +36,9 @@ new #[Layout('components.layouts.guest')] #[Title('Login')] class extends Compon
 
             $user = auth()->user();
 
-            return $user->role === 'admin' ? redirect()->route('dashboard') : redirect()->route('home');
+            return $user->role === 'admin'
+                ? redirect()->route('dashboard')
+                : redirect()->route('home');
         }
 
         $this->addError('email', 'The provided credentials do not match our records.');
@@ -47,17 +47,45 @@ new #[Layout('components.layouts.guest')] #[Title('Login')] class extends Compon
 
 ?>
 
-<div>
-    <div class="ma ">
-        <img src="/login.png" width="200" class="mx-auto" />
+<div class=" flex items-center justify-center bg-gradient-to-br   p-4">
 
-        <x-form wire:submit="login">
-            <x-input label="E-mail" wire:model.defer="email" icon="o-envelope" inline class="w-full" />
-            <x-input label="Password" wire:model.defer="password" type="password" icon="o-key" inline class="w-full" />
+    <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md border border-blue-100">
+
+        <div class="text-center mb-6">
+            <img src="/login.png" class="mx-auto w-24 mb-2" />
+            <h1 class="text-xl font-semibold text-gray-700">Welcome Back</h1>
+            <p class="text-gray-500 text-sm">Please login to continue</p>
+        </div>
+
+        <x-form wire:submit="login" class="space-y-4">
+            <x-input 
+                label="E-mail" 
+                wire:model.defer="email" 
+                icon="o-envelope" 
+                inline 
+                class="w-full"
+            />
+
+            <x-input 
+                label="Password" 
+                wire:model.defer="password" 
+                type="password" 
+                icon="o-key" 
+                inline 
+                class="w-full"
+            />
 
             <x-slot:actions>
-                <x-button label="Login" type="submit" icon="o-paper-airplane" class="btn-primary" spinner="login" />
+                <x-button 
+                    label="Login" 
+                    type="submit" 
+                    icon="o-paper-airplane" 
+                    class="btn-primary w-full" 
+                    spinner="login" 
+                />
             </x-slot:actions>
         </x-form>
+
     </div>
+
 </div>

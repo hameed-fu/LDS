@@ -13,10 +13,10 @@ class CommentFactory extends Factory
 
     public function definition()
     {
-        return [
-            'post_id' => Post::inRandomOrder()->first(),
-            'author_id' => User::factory(),
-            'body' => $this->faker->text()
-        ];
+        // return [
+        //     'post_id' => Post::inRandomOrder()->first(),
+        //     'author_id' => User::factory(),
+        //     'body' => $this->faker->text()
+        // ];
     }
 }

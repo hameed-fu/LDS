@@ -10,19 +10,19 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen font-sans antialiased bg-base-200/50 dark:bg-base-200">
+<body class="min-h-screen font-sans antialiased  dark:bg-base-200">
 
 
      
-    <div class="flex items-center justify-center min-h-screen bg-gray-100">
+     
         <x-card class="md:w-1/2 lg:w-1/3 mx-auto mt-20 p-8">
             <div class="mb-10 text-center">
-                <h2 style="font-weight: bold; font-size: 28px">LDS</h2>
+                <h2 style="font-weight: bold; font-size: 28px">Virtual Class Room</h2>
                 {{-- <img src="https://placehold.co/200x90" alt="Cool image here" class="mx-auto"> --}}
             </div>
             {{ $slot }}
         </x-card>
-    </div>
+ 
      
     <x-toast />
 </body>

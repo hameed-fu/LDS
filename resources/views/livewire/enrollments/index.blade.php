@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Enrollment;
+use App\Models\ClassEnrollment;
+use App\Models\VirtualClass;
 use App\Models\User;
-use App\Models\Course;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,23 +17,23 @@ new class extends Component {
 
     public bool $myModal = false;
     public ?int $enrollmentId = null;
-    public string $user_id = '';
-    public string $course_id = '';
+    public string $student_id = '';
+    public string $class_id = '';
 
     // Fetch enrollments
     public function enrollments()
     {
-        return Enrollment::query()
-            ->with(['user', 'course'])
+        return ClassEnrollment::query()
+            ->with(['student', 'virtualClass'])
             ->when(
                 $this->search,
-                fn(Builder $q) => $q->whereHas('user', fn($uq) => $uq->where('name', 'like', "%$this->search%"))
-                                    ->orWhereHas('course', fn($cq) => $cq->where('title', 'like', "%$this->search%"))
+                fn(Builder $q) => $q->whereHas('student', fn($uq) => $uq->where('name', 'like', "%$this->search%"))
+                                    ->orWhereHas('virtualClass', fn($cq) => $cq->where('name', 'like', "%$this->search%"))
             )
             ->paginate(20);
     }
 
-    // Get users (students only)
+    // Get students
     public function students()
     {
         return User::where('role', 'student')
@@ -44,10 +44,10 @@ new class extends Component {
             ->toArray();
     }
 
-    // Get courses
-    public function courses()
+    // Get classes
+    public function classes()
     {
-        return Course::select('id as id', 'title as name')
+        return VirtualClass::select('id as id', 'name as name')
             ->get()
             ->map(fn($c) => ['id' => $c->id, 'name' => $c->name])
             ->prepend(['id' => '', 'name' => 'Please select'])
@@ -62,11 +62,11 @@ new class extends Component {
     }
 
     // Edit existing
-    public function edit(Enrollment $enrollment): void
+    public function edit(ClassEnrollment $enrollment): void
     {
         $this->enrollmentId = $enrollment->id;
-        $this->user_id = $enrollment->user_id;
-        $this->course_id = $enrollment->course_id;
+        $this->student_id = $enrollment->student_id;
+        $this->class_id = $enrollment->class_id;
         $this->myModal = true;
     }
 
@@ -74,13 +74,13 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
-            'user_id' => 'required|exists:users,id',
-            'course_id' => 'required|exists:courses,id',
+            'student_id' => 'required|exists:users,id',
+            'class_id' => 'required|exists:classes,id',
         ]);
 
         $enrollment = $this->enrollmentId
-            ? Enrollment::findOrFail($this->enrollmentId)
-            : new Enrollment();
+            ? ClassEnrollment::findOrFail($this->enrollmentId)
+            : new ClassEnrollment();
 
         $enrollment->fill($data)->save();
 
@@ -92,7 +92,7 @@ new class extends Component {
     // Delete
     public function delete($id): void
     {
-        Enrollment::findOrFail($id)->delete();
+        ClassEnrollment::findOrFail($id)->delete();
         $this->warning(title: 'Enrollment deleted!');
     }
 
@@ -107,22 +107,23 @@ new class extends Component {
     // Reset form
     public function resetForm(): void
     {
-        $this->reset(['enrollmentId', 'user_id', 'course_id']);
+        $this->reset(['enrollmentId', 'student_id', 'class_id']);
     }
 
     public function with(): array
     {
         $headers = [
             ['key' => 'id', 'label' => '#'],
-            ['key' => 'user.name', 'label' => 'Student'],
-            ['key' => 'course.title', 'label' => 'Course'],
+            ['key' => 'student.name', 'label' => 'Student'],
+            ['key' => 'virtualClass.name', 'label' => 'Class'],
             ['key' => 'enrolled_at', 'label' => 'Enrolled At'],
+            ['key' => 'status', 'label' => 'Status'],
         ];
 
         return [
             'enrollments' => $this->enrollments(),
             'students' => $this->students(),
-            'courses' => $this->courses(),
+            'classes' => $this->classes(),
             'headers' => $headers,
         ];
     }
@@ -130,7 +131,7 @@ new class extends Component {
 ?>
 
 <div>
-    <x-header title="Enrollments" separator progress-indicator />
+    <x-header title="Class Enrollments" separator progress-indicator />
 
     <div class="grid gap-3 sm:flex sm:justify-between mb-4">
         <div class="flex gap-2">
@@ -143,6 +144,7 @@ new class extends Component {
 
     <x-card class="!p-0 sm:!p-2" shadow>
         <x-table :headers="$headers" :rows="$enrollments" striped hoverable with-pagination>
+             
             @scope('actions', $enrollment)
                 <div class="flex gap-2 justify-center">
                     <x-button sm icon="o-pencil" class="btn-ghost btn-sm" wire:click="edit({{ $enrollment->id }})" />
@@ -155,8 +157,8 @@ new class extends Component {
     </x-card>
 
     <x-modal wire:model="myModal" title="{{ $enrollmentId ? 'Edit Enrollment' : 'Create Enrollment' }}">
-        <x-select label="Student" wire:model.defer="user_id" :options="$students" />
-        <x-select label="Course" wire:model.defer="course_id" :options="$courses" />
+        <x-select label="Student" wire:model.defer="student_id" :options="$students" />
+        <x-select label="Class" wire:model.defer="class_id" :options="$classes" />
 
         <x-slot:actions>
             <x-button label="Cancel" @click="$wire.myModal = false" />

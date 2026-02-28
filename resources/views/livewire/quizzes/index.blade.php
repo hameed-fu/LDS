@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Quiz;
-use App\Models\Lesson;
+use App\Models\VirtualClass;
 use Livewire\Volt\Component;
 use Livewire\Attributes\Url;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,23 +17,22 @@ new class extends Component {
     public bool $myModal = false;
     public ?int $quizId = null;
 
-    public string $lesson_id = '';
-    public string $title = '';
+    public string $class_id = '';
+    public string $name = '';
+    public string $description = '';
+    public ?int $duration = null;
+    public ?int $total_marks = null;
+    public ?string $start_time = null;
+    public ?string $end_time = null;
 
-    // Lessons dropdown
-    public function lessons()
-{
-    return Lesson::with('course')
-        ->select('id', 'title', 'course_id')
-        ->get()
-        ->map(fn($l) => [
-            'id'   => $l->id,
-            'name' => $l->title . ' (' . $l->course?->title . ')',
-        ])
-        ->prepend(['id' => '', 'name' => 'Please select'])
-        ->toArray();
-}
-
+    // Classes dropdown
+    public function virtualClasses()
+    {
+        return VirtualClass::select('id', 'name')->get()
+            ->map(fn($c) => ['id' => $c->id, 'name' => $c->name])
+            ->prepend(['id' => '', 'name' => 'Please select'])
+            ->toArray();
+    }
 
     // Create
     public function create(): void
@@ -46,8 +45,13 @@ new class extends Component {
     public function edit(Quiz $quiz): void
     {
         $this->quizId = $quiz->id;
-        $this->lesson_id = $quiz->lesson_id;
-        $this->title = $quiz->title;
+        $this->class_id = $quiz->class_id;
+        $this->name = $quiz->name;
+        $this->description = $quiz->description;
+        $this->duration = $quiz->duration;
+        $this->total_marks = $quiz->total_marks;
+        $this->start_time = $quiz->start_time?->format('Y-m-d\TH:i');
+        $this->end_time = $quiz->end_time?->format('Y-m-d\TH:i');
         $this->myModal = true;
     }
 
@@ -55,8 +59,13 @@ new class extends Component {
     public function save(): void
     {
         $data = $this->validate([
-            'lesson_id' => 'required|exists:lessons,id',
-            'title' => 'required|string|min:3',
+            'class_id' => 'required|exists:classes,id',
+            'name' => 'required|string|min:3',
+            'description' => 'nullable|string',
+            'duration' => 'nullable|integer|min:0',
+            'total_marks' => 'nullable|integer|min:0',
+            'start_time' => 'nullable|date',
+            'end_time' => 'nullable|date|after_or_equal:start_time',
         ]);
 
         $quiz = $this->quizId ? Quiz::findOrFail($this->quizId) : new Quiz();
@@ -64,32 +73,34 @@ new class extends Component {
 
         $this->resetForm();
         $this->myModal = false;
-        $this->success(title: 'Quiz saved!');
+        $this->success(name: 'Quiz saved!');
     }
 
     // Delete
     public function delete($id): void
     {
         Quiz::findOrFail($id)->delete();
-        $this->warning(title: 'Quiz deleted!');
+        $this->warning(name: 'Quiz deleted!');
     }
 
     // Reset form
     public function resetForm(): void
     {
-        $this->reset(['quizId', 'lesson_id', 'title']);
+        $this->reset([
+            'quizId', 'class_id', 'name', 'description', 'duration',
+            'total_marks', 'start_time', 'end_time'
+        ]);
     }
 
     public function quizzes()
     {
         return Quiz::query()
-            ->with(['lesson.course']) // eager load course
+            ->with(['virtualClass'])
             ->when(
                 $this->search,
                 fn(Builder $q) => $q
-                    ->where('title', 'like', "%$this->search%")
-                    ->orWhereHas('lesson', fn($lq) => $lq->where('title', 'like', "%$this->search%"))
-                    ->orWhereHas('lesson.course', fn($cq) => $cq->where('title', 'like', "%$this->search%")),
+                    ->where('name', 'like', "%$this->search%")
+                    ->orWhereHas('virtualClass', fn($cq) => $cq->where('name', 'like', "%$this->search%"))
             )
             ->paginate(20);
     }
@@ -98,14 +109,15 @@ new class extends Component {
     {
         $headers = [
             ['key' => 'id', 'label' => '#'],
-            ['key' => 'title', 'label' => 'Title'],
-            ['key' => 'lesson.title', 'label' => 'Lesson'],
-            ['key' => 'lesson.course.title', 'label' => 'Course'],  
+            ['key' => 'name', 'label' => 'name'],
+            ['key' => 'virtualClass.name', 'label' => 'Class'],
+            ['key' => 'duration', 'label' => 'Duration'],
+            ['key' => 'total_marks', 'label' => 'Total Marks'],
         ];
 
         return [
             'quizzes' => $this->quizzes(),
-            'lessons' => $this->lessons(),
+            'virtualClasses' => $this->virtualClasses(),
             'headers' => $headers,
         ];
     }
@@ -113,7 +125,7 @@ new class extends Component {
 ?>
 
 <div>
-    <x-header title="Quizzes" separator progress-indicator />
+    <x-header name="Quizzes" separator progress-indicator />
 
     <div class="grid gap-3 sm:flex sm:justify-between mb-4">
         <div class="flex gap-2">
@@ -136,9 +148,14 @@ new class extends Component {
         </x-table>
     </x-card>
 
-    <x-modal wire:model="myModal" title="{{ $quizId ? 'Edit Quiz' : 'Create Quiz' }}">
-        <x-select label="Lesson" wire:model.defer="lesson_id" :options="$lessons" />
-        <x-input label="Title" wire:model.defer="title" />
+    <x-modal wire:model="myModal" name="{{ $quizId ? 'Edit Quiz' : 'Create Quiz' }}">
+        <x-select label="Class" wire:model.defer="class_id" :options="$virtualClasses" />
+        <x-input label="name" wire:model.defer="name" />
+        <x-input label="Description" wire:model.defer="description" />
+        <x-input type="number" label="Duration (mins)" wire:model.defer="duration" />
+        <x-input type="number" label="Total Marks" wire:model.defer="total_marks" />
+        <x-input type="datetime-local" label="Start Time" wire:model.defer="start_time" />
+        <x-input type="datetime-local" label="End Time" wire:model.defer="end_time" />
 
         <x-slot:actions>
             <x-button label="Cancel" @click="$wire.myModal = false" />

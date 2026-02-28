@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\LiveSession;
+use App\Models\VirtualClass;
 use Illuminate\Http\Request;
 
 class SiteController extends Controller
 {
     public function index()
     {
-        $courses = Course::all();
-        return view('site.index', compact('courses'));
+        $classes = VirtualClass::all();
+        return view('site.index', compact('classes'));
     }
 
     public function about()
@@ -19,16 +21,17 @@ class SiteController extends Controller
         return view('site.about');
     }
 
-    public function courses()
+    public function classes()
     {
-        $courses = Course::all();
-        return view('site.courses', compact('courses'));
+        $classes = VirtualClass::all();
+        return view('site.classes', compact('classes'));
     }
 
-     public function course_detail($id)
+    public function class_detail($id)
     {
-        $course = Course::find($id);
-        return view('site.course_detail', compact('course'));
+        $enrolledStudents = Enrollment::where('class_id', $id)->count();
+        $class = VirtualClass::find($id);
+        return view('site.course_detail', compact('class', 'enrolledStudents'));
     }
 
     public function contact()
@@ -37,35 +40,41 @@ class SiteController extends Controller
     }
     public function enroll()
     {
-        if(!auth()->check()){
+        if (!auth()->check()) {
             return redirect('login');
         }
-        $courses = Course::all();
-        return view('site.enroll', compact('courses'));
+        $classes = VirtualClass::all();
+        return view('site.enroll', compact('classes'));
     }
 
     public function enroll_save(Request $request)
     {
-        $userId = auth()->id();  
+        $userId = auth()->id();
 
         // Validate request input
         $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
+            'class_id' => 'required|exists:classes,id',
         ]);
 
         // Check if the user is already enrolled in this course
-        $existing =  Enrollment::where('user_id', $userId)
-            ->where('course_id', $validated['course_id'])
+        $existing = Enrollment::where('student_id', $userId)
+            ->where('class_id', $validated['class_id'])
             ->first();
 
         if ($existing) {
             return redirect()->back()->with('error', 'You are already enrolled in this course.');
         }
 
+        // Check if the user has already enrolled in 2 courses
+        $enrolledCount = Enrollment::where('student_id', $userId)->count();
+        if ($enrolledCount >= 3) {
+            return redirect()->back()->with('error', 'You cannot enroll in more than 3 courses.');
+        }
+
         // Save new enrollment
-         Enrollment::create([
-            'user_id' => $userId,
-            'course_id' => $validated['course_id'],
+        Enrollment::create([
+            'student_id' => $userId,
+            'class_id' => $validated['class_id'],
             'enrolled_at' => now(),
         ]);
 
@@ -73,8 +82,11 @@ class SiteController extends Controller
     }
 
 
+
     public function register()
     {
         return view('site.register');
     }
+
+    
 }

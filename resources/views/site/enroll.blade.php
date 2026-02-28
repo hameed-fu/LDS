@@ -54,18 +54,17 @@
                             <div class="row mb-4">
                                 <div class="col-12">
                                     <div class="form-group">
-                                        <label for="course" class="form-label">Select Course *</label>
-                                        {{-- Course Selection --}}
+                                        
                                         <div class="form-group mb-4">
-                                            <label for="course_id" class="form-label fw-semibold">Select Course *</label>
-                                            <select name="course_id" id="course_id" class="form-control" required>
-                                                <option value="">-- Choose a Course --</option>
-                                                @foreach ($courses as $course)
-                                                    <option {{ $course->id == request()->course_id ? 'selected' : '' }}
-                                                        value="{{ $course->id }}">{{ $course->title }}</option>
+                                            <label for="class_id" class="form-label fw-semibold">Select class *</label>
+                                            <select name="class_id" id="class_id" class="form-control" required>
+                                                <option value="">-- Choose a class --</option>
+                                                @foreach ($classes as $class)
+                                                    <option {{ $class->id == request()->class_id ? 'selected' : '' }}
+                                                        value="{{ $class->id }}">{{ $class->name }}</option>
                                                 @endforeach
                                             </select>
-                                            @error('course_id')
+                                            @error('class_id')
                                                 <small class="text-danger">{{ $message }}</small>
                                             @enderror
                                         </div>

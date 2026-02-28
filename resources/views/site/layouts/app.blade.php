@@ -4,11 +4,12 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>LDS 
-    - @yield('pageTitle', 'LDS')
+  <title>Virtual Class Room 
+    - @yield('pageTitle', 'Virtual Class Room')
 </title>
   <meta name="description" content="">
   <meta name="keywords" content="">
+@vite(['resources/js/app.js'])
 
   <!-- Favicons -->
   <link href="{{ asset('assets/img/favicon.png') }}" rel="icon">
@@ -96,7 +97,7 @@
       <p>© <span>Copyright</span> <strong class="px-1 sitename">Learner</strong> <span>All Rights Reserved</span></p>
       <div class="credits">
         
-        Designed by <a href="#">Your name</a>
+        Designed by <a href="#">Rehana</a>
       </div>
     </div>
 

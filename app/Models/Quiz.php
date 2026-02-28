@@ -7,10 +7,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Quiz extends Model {
-    protected $fillable = ['lesson_id','title'];
+protected $fillable = ['session_iid','title'];
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
+    ];
 
     public function lesson(): BelongsTo {
         return $this->belongsTo(Lesson::class);
+    }
+
+    public function liveSession(): BelongsTo {
+        return $this->belongsTo(LiveSession::class, 'session_id');
+    }
+
+    public function virtualClass(): BelongsTo {
+        return $this->belongsTo(VirtualClass::class, 'class_id');
+    }
+
+    public function creator(): BelongsTo {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function questions(): HasMany {
