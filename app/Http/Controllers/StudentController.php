@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Assignment;
 use App\Models\Attendance;
 use App\Models\VirtualClass;
 use App\Models\ClassEnrollment;
@@ -10,6 +11,7 @@ use App\Models\LessonView;
 use App\Models\QuizAttempt;
 use App\Models\Certificate;
 use App\Models\LiveSession;
+use App\Models\Submission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -76,7 +78,7 @@ class StudentController extends Controller
             // Count completed sessions - adjust based on your attendance tracking
             $completedSessions = Attendance::where('student_id', $user->id)
                 ->whereIn('session_id', $enrollment->virtualClass->liveSessions->pluck('id'))
-                ->where('status', 'present') // or whatever status indicates completion
+                ->where('status', 'present')
                 ->count();
 
             $enrollment->completed_sessions = $completedSessions;
@@ -94,8 +96,13 @@ class StudentController extends Controller
     public function showCourse($class_id)
     {
         $user = Auth::user();
-        $virtualClass = VirtualClass::find($class_id);
-        // Check if user is enrolled in this class
+
+        $virtualClass = VirtualClass::with([
+            'liveSessions.quizzes.questions.options',
+            'teacher'
+        ])->findOrFail($class_id);
+
+        // Check enrollment
         $enrollment = ClassEnrollment::where('student_id', $user->id)
             ->where('class_id', $virtualClass->id)
             ->first();
@@ -105,17 +112,18 @@ class StudentController extends Controller
                 ->with('error', 'You are not enrolled in this class.');
         }
 
-        // Load live sessions
-        $virtualClass->load(['liveSessions', 'teacher']);
-
         $totalSessions = $virtualClass->liveSessions->count();
 
-        // Count completed sessions - adjust based on how you track completion
-        // Using Attendance model as example
+        $sessionIds = $virtualClass->liveSessions->pluck('id');
+
+        // Count UNIQUE sessions attended
         $completedSessions = Attendance::where('student_id', $user->id)
-            ->whereIn('session_id', $virtualClass->liveSessions->pluck('id'))
+            ->whereIn('session_id', $sessionIds)
             ->where('status', 'present')
-            ->count();
+            ->distinct('session_id')
+            ->count('session_id');
+
+        $completedSessions = min($completedSessions, $totalSessions);
 
         $progress = $totalSessions > 0
             ? round(($completedSessions / $totalSessions) * 100)
@@ -158,110 +166,189 @@ class StudentController extends Controller
         }
 
         // redirect to lessonShow method
-        return redirect()->route('student.lesson.show', $nextLesson->id);
+        return redirect()->route('student.session.show', $nextLesson->id);
     }
 
     /**
      * Show a single lesson (and mark it as viewed)
      */
- public function sessionShow(LiveSession $liveSession)
-{
-    $user = Auth::user();
+    public function sessionShow($liveSession)
+    {
+        $user = Auth::user();
 
-    // Check if session belongs to a class user is enrolled in
-    $liveSession->load('virtualClass');
+        $liveSession = LiveSession::with('virtualClass')->findOrFail($liveSession);
 
-    $enrollment = ClassEnrollment::where('student_id', $user->id)
-        ->where('class_id', $liveSession->virtualClass->id)
-        ->first();
+        // Safety check
+        if (!$liveSession->class_id) {
+            abort(404, 'Session not linked to a class.');
+        }
 
-    if (!$enrollment) {
-        return redirect()->route('student.my_courses')
-            ->with('error', 'You are not enrolled in this class.');
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | Check Enrollment (USES enrollments TABLE)
+        |--------------------------------------------------------------------------
+        */
+        $enrollment = ClassEnrollment::where('student_id', $user->id)
+            ->where('class_id', $liveSession->class_id)
+            ->first();
 
-    // Mark attendance if session is live and user hasn't attended yet
-    if ($liveSession->status === 'ongoing') {
-        Attendance::firstOrCreate([
-            'session_id' => $liveSession->id,
-            'student_id' => $user->id,
-        ], [
-            'status' => 'present',
-            'joined_at' => now(),
+        if (!$enrollment) {
+            return redirect()->route('student.my_courses')
+                ->with('error', 'You are not enrolled in this class.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mark Attendance (ONLY ONCE)
+        |--------------------------------------------------------------------------
+        */
+        if ($liveSession->status === 'ongoing') {
+
+            Attendance::firstOrCreate(
+                [
+                    'session_id' => $liveSession->id,
+                    'student_id' => $user->id,
+                ],
+                [
+                    'class_id'  => $liveSession->class_id,
+                    'date'      => now()->toDateString(),
+                    'status'    => 'present',
+                    'timestamp' => now(),
+                ]
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Load Relations
+        |--------------------------------------------------------------------------
+        */
+        $liveSession->load([
+            'virtualClass',
+            'virtualClass.assignments',
+            'virtualClass.liveSessions.quizzes.questions.options',
+            'attendances' => fn($q) => $q->where('student_id', $user->id),
+        ]);
+
+        $hasAttended = $liveSession->attendances->isNotEmpty();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Upcoming Sessions
+        |--------------------------------------------------------------------------
+        */
+        $upcomingSessions = LiveSession::where('class_id', $liveSession->class_id)
+            ->where('status', 'scheduled')
+            ->where('scheduled_at', '>', now())
+            ->orderBy('scheduled_at')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Past Sessions (FIXED GROUPING)
+        |--------------------------------------------------------------------------
+        */
+        $pastSessions = LiveSession::where('class_id', $liveSession->class_id)
+            ->where(function ($query) {
+                $query->whereIn('status', ['completed', 'cancelled'])
+                    ->orWhere(function ($q) {
+                        $q->where('status', 'scheduled')
+                            ->where('scheduled_at', '<', now());
+                    });
+            })
+            ->orderByDesc('scheduled_at')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Progress (COUNT UNIQUE ATTENDED SESSIONS)
+        |--------------------------------------------------------------------------
+        */
+        $totalSessions = LiveSession::where('class_id', $liveSession->class_id)->count();
+
+        $attendedSessions = Attendance::where('student_id', $user->id)
+            ->where('class_id', $liveSession->class_id)
+            ->where('status', 'present')
+            ->distinct('session_id')
+            ->count('session_id');
+
+        $attendedSessions = min($attendedSessions, $totalSessions);
+
+        $progress = $totalSessions > 0
+            ? round(($attendedSessions / $totalSessions) * 100)
+            : 0;
+
+        $virtualClass = $liveSession->virtualClass;
+
+        /*
+|--------------------------------------------------------------------------
+| Assignment Stats
+|--------------------------------------------------------------------------
+*/
+        $assignments = $virtualClass->assignments;
+
+        $totalAssignments = $assignments->count();
+
+        $submittedAssignments = $assignments->filter(function ($assignment) use ($user) {
+            return $assignment->submissions
+                ->where('student_id', $user->id)
+                ->count() > 0;
+        })->count();
+
+        /*
+|--------------------------------------------------------------------------
+| Quiz Stats
+|--------------------------------------------------------------------------
+*/
+        $quizzes = $virtualClass->liveSessions
+            ->flatMap->quizzes;
+
+        $totalQuizzes = $quizzes->count();
+
+        $attemptedQuizzes = $quizzes->filter(function ($quiz) use ($user) {
+            return $quiz->attempts
+                ->where('user_id', $user->id)
+                ->count() > 0;
+        })->count();
+
+        return view('student.session_show', [
+            'session' => $liveSession,
+            'virtualClass' => $virtualClass,
+            'assignments' => $assignments,
+            'quizzes' => $quizzes,
+            'totalAssignments' => $totalAssignments,
+            'submittedAssignments' => $submittedAssignments,
+            'totalQuizzes' => $totalQuizzes,
+            'attemptedQuizzes' => $attemptedQuizzes,
+            'hasAttended' => $hasAttended,
+            'upcomingSessions' => $upcomingSessions,
+            'pastSessions' => $pastSessions,
+            'progress' => $progress,
         ]);
     }
 
-    // Load related data
-    $liveSession->load([
-        'virtualClass',
-        'virtualClass.assignments',
-        'virtualClass.quizzes.questions.options',
-        'attendances' => function ($query) use ($user) {
-            $query->where('student_id', $user->id);
-        }
-    ]);
+    // Mark attendance
+    public function markAttendance(LiveSession $liveSession, Request $request)
+    {
+        $user = Auth::user();
 
-    // Check if user has attended this session
-    $hasAttended = $liveSession->attendances->where('student_id', $user->id)->isNotEmpty();
+        $attendance = Attendance::updateOrCreate(
+            [
+                'session_id' => $liveSession->id,
+                'student_id' => $user->id,
+            ],
+            [
+                'status' => 'present',
+                'joined_at' => now(),
+            ]
+        );
 
-    // Get upcoming and past sessions for this class
-    $upcomingSessions = LiveSession::where('class_id', $liveSession->virtualClass->id)
-        ->where('status', 'scheduled')
-        ->where('scheduled_at', '>', now())
-        ->orderBy('scheduled_at', 'asc')
-        ->get();
-
-    $pastSessions = LiveSession::where('class_id', $liveSession->virtualClass->id)
-        ->whereIn('status', ['completed', 'cancelled'])
-        ->orWhere(function ($query) {
-            $query->where('status', 'scheduled')
-                  ->where('scheduled_at', '<', now());
-        })
-        ->orderBy('scheduled_at', 'desc')
-        ->get();
-
-    // Calculate progress for the class
-    $totalSessions = LiveSession::where('class_id', $liveSession->virtualClass->id)->count();
-    $attendedSessions = Attendance::where('student_id', $user->id)
-        ->whereHas('liveSession', function ($query) use ($liveSession) {
-            $query->where('class_id', $liveSession->virtualClass->id);
-        })
-        ->where('status', 'present')
-        ->count();
-
-    $progress = $totalSessions > 0 ? round(($attendedSessions / $totalSessions) * 100) : 0;
-
-    return view('student.session_show', compact(
-        'session', // Renamed from $liveSession to $session for consistency
-        'hasAttended',
-        'upcomingSessions',
-        'pastSessions',
-        'progress'
-    ));
-}
-
-// Mark attendance
-public function markAttendance(LiveSession $liveSession, Request $request)
-{
-    $user = Auth::user();
-
-    $attendance = Attendance::updateOrCreate(
-        [
-            'session_id' => $liveSession->id,
-            'student_id' => $user->id,
-        ],
-        [
-            'status' => 'present',
-            'joined_at' => now(),
-        ]
-    );
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Attendance marked successfully',
-        'attendance' => $attendance
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Attendance marked successfully',
+            'attendance' => $attendance
+        ]);
+    }
 
     /**
      * Download lesson PDF
@@ -307,34 +394,46 @@ public function markAttendance(LiveSession $liveSession, Request $request)
      */
     public function quizShow($quizId)
     {
-        $quiz = \App\Models\Quiz::with('questions.options')->findOrFail($quizId);
+        $quiz = \App\Models\Quiz::with([
+            'questions' => function ($q) {
+                $q->has('options');
+            },
+            'questions.options',
+            'session.virtualClass'
+        ])->findOrFail($quizId);
+
         $user = Auth::user();
 
-        // Check if quiz belongs to a lesson in a class user is enrolled in
-        $quiz->load('lesson.virtualClass');
-
+        // Enrollment check
         $enrollment = ClassEnrollment::where('student_id', $user->id)
-            ->where('class_id', $quiz->lesson->virtualClass->id)
+            ->where('class_id', $quiz->session->virtualClass->id)
             ->first();
 
         if (!$enrollment) {
             abort(403, 'You are not enrolled in this class.');
         }
 
+        // Total valid questions (ONLY questions with options)
+        $totalQuestions = $quiz->questions->count();
+
         $attempts = \App\Models\QuizAttempt::where('quiz_id', $quiz->id)
             ->where('user_id', $user->id)
             ->orderByDesc('attempted_at')
             ->get()
-            ->map(function ($attempt) use ($quiz) {
+            ->map(function ($attempt) use ($quiz, $totalQuestions) {
+
                 $correct = 0;
-                $wrong = 0;
+                $wrong   = 0;
 
-                // Loop over all questions in this quiz
                 foreach ($quiz->questions as $question) {
-                    $answerData = $attempt->answers[$question->id] ?? null;
-                    if (!$answerData) continue;
 
-                    $selected = $answerData['selected'] ?? null;
+                    $answerData = $attempt->answers[$question->id] ?? null;
+
+                    if (!$answerData) {
+                        continue;
+                    }
+
+                    $selected   = $answerData['selected'] ?? null;
                     $correctIds = $answerData['correct'] ?? [];
 
                     if (in_array($selected, $correctIds)) {
@@ -344,8 +443,14 @@ public function markAttendance(LiveSession $liveSession, Request $request)
                     }
                 }
 
+                // Calculate percentage correctly
+                $percentage = $totalQuestions > 0
+                    ? round(($correct / $totalQuestions) * 100)
+                    : 0;
+
                 $attempt->correct_count = $correct;
-                $attempt->wrong_count = $wrong;
+                $attempt->wrong_count   = $wrong;
+                $attempt->score         = $percentage;
 
                 return $attempt;
             });
@@ -360,14 +465,54 @@ public function markAttendance(LiveSession $liveSession, Request $request)
     {
         $user = Auth::user();
 
-        $quizAttempts = QuizAttempt::with('quiz')
+        $quizAttempts = QuizAttempt::with([
+            'quiz.questions' => function ($q) {
+                $q->has('options');
+            },
+            'quiz.questions.options'
+        ])
             ->where('user_id', $user->id)
             ->latest('attempted_at')
-            ->get();
+            ->get()
+            ->map(function ($attempt) {
+
+                $quiz = $attempt->quiz;
+                $totalQuestions = $quiz->questions->count();
+
+                $correct = 0;
+                $wrong   = 0;
+
+                foreach ($quiz->questions as $question) {
+
+                    $answerData = $attempt->answers[$question->id] ?? null;
+
+                    if (!$answerData) {
+                        continue;
+                    }
+
+                    $selected   = $answerData['selected'] ?? null;
+                    $correctIds = $answerData['correct'] ?? [];
+
+                    if (in_array($selected, $correctIds)) {
+                        $correct++;
+                    } else {
+                        $wrong++;
+                    }
+                }
+
+                $percentage = $totalQuestions > 0
+                    ? round(($correct / $totalQuestions) * 100)
+                    : 0;
+
+                $attempt->correct_count = $correct;
+                $attempt->wrong_count   = $wrong;
+                $attempt->score         = $percentage;
+
+                return $attempt;
+            });
 
         return view('student.my_quiz_attempts', compact('quizAttempts'));
     }
-
     /**
      * Handle quiz submission and record attempt
      */
@@ -377,9 +522,9 @@ public function markAttendance(LiveSession $liveSession, Request $request)
         $user = Auth::user();
 
         // Check enrollment
-        $quiz->load('lesson.virtualClass');
+        $quiz->load('session.virtualClass');
         $enrollment = ClassEnrollment::where('student_id', $user->id)
-            ->where('class_id', $quiz->lesson->virtualClass->id)
+            ->where('class_id', $quiz->session->virtualClass->id)
             ->first();
 
         if (!$enrollment) {
@@ -420,13 +565,14 @@ public function markAttendance(LiveSession $liveSession, Request $request)
 
     public function quizStart($quizId)
     {
-        $quiz = \App\Models\Quiz::with('lesson')->findOrFail($quizId);
+        $quiz = \App\Models\Quiz::with('session')->findOrFail($quizId);
 
         // Check enrollment
-        $quiz->load('lesson.virtualClass');
+        $quiz->load('session.virtualClass');
         $user = Auth::user();
+
         $enrollment = ClassEnrollment::where('student_id', $user->id)
-            ->where('class_id', $quiz->lesson->virtualClass->id)
+            ->where('class_id', $quiz->session->virtualClass->id)
             ->first();
 
         if (!$enrollment) {
@@ -513,6 +659,61 @@ public function markAttendance(LiveSession $liveSession, Request $request)
         return redirect($certificate->certificate_url);
     }
 
+
+
+    public function showAssignment($id)
+    {
+        $assignment = Assignment::with('submissions')
+            ->findOrFail($id);
+
+        $submission = $assignment->submissions
+            ->where('student_id', auth()->id())
+            ->first();
+
+        return view('student.assignment_show', compact('assignment', 'submission'));
+    }
+
+
+    public function submitAssignment(Request $request, $assignmentId)
+{
+    $assignment = Assignment::findOrFail($assignmentId);
+
+    $existingSubmission = Submission::where('assignment_id', $assignment->id)
+        ->where('student_id', auth()->id())
+        ->first();
+
+    
+    if ($existingSubmission && $existingSubmission->status !== 'late') {
+        return back()->with('error', 'You have already submitted this assignment.');
+    }
+
+    $request->validate([
+        'file' => 'required|file|max:10240',
+    ]);
+
+    $isLate = false;
+
+    if ($assignment->due_date && now()->greaterThan($assignment->due_date)) {
+        $isLate = true;
+    }
+
+    $filePath = $request->file('file')
+        ->store('assignments', 'public');
+
+    Submission::updateOrCreate(
+        [
+            'assignment_id' => $assignment->id,
+            'student_id' => auth()->id(),
+        ],
+        [
+            'file_path' => $filePath,
+            'submitted_at' => now(),
+            'status' => $isLate ? 'late' : 'submitted',
+        ]
+    );
+
+    return back()->with('success', 'Assignment submitted successfully.');
+}
     /**
      * PDF Generation using Dompdf for virtual class certificate
      */

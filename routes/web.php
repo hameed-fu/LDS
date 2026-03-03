@@ -64,7 +64,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/student/quiz-attempts', [StudentController::class, 'myQuizAttempts'])->name('student.my_quiz_attempts');
     Route::get('/student/class/{class_id}', [StudentController::class, 'showCourse'])->name('student.course.show');
     Route::get('/student/class/{class}/continue', [StudentController::class, 'continueCourse'])->name('student.course.continue');
-    Route::get('/student/lesson/{lesson}', [StudentController::class, 'lessonShow'])->name('student.lesson.show');
+    Route::get('/student/session/{session}', [StudentController::class, 'sessionShow'])->name('student.session.show');
 
 
     // Quizzes
@@ -72,14 +72,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/student/quiz/{quiz}/start', [StudentController::class, 'quizStart'])->name('student.quiz.start');
     Route::post('/student/quiz/{quiz}/attempt', [StudentController::class, 'submitQuiz'])->name('student.quiz.attempt');
 
-    Route::get('/student/certificates', [StudentController::class, 'studentCertificates'])
-        ->name('student.certificates');
-    Route::get('/student/certificate/{course_id}', [StudentController::class, 'generateCertificate'])
-        ->name('student.downloadCertificate');
+    Route::get('/student/assignment/{assignment}', [StudentController::class, 'showAssignment'])
+    ->name('student.assignment.show');
+
+Route::post('/student/assignment/{assignment}/submit', [StudentController::class, 'submitAssignment'])
+    ->name('student.assignment.submit');
 });
 
-Route::get('/student/lesson/{lesson}/download', [StudentController::class, 'downloadLessonPdf'])
-    ->name('student.lesson.download');
+Route::get('/student/session/{session}/download', [StudentController::class, 'downloadSessionPdf'])
+    ->name('student.session.download');
 
 
 // end student routes

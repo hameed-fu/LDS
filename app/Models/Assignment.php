@@ -2,35 +2,44 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Assignment extends Model
 {
-    protected $fillable = ['session_id', 'class_id', 'title', 'description', 'due_date', 'max_score', 'created_by'];
+    use HasFactory;
+
+    protected $fillable = [
+        'session_id',
+        'class_id',
+        'title',
+        'description',
+        'due_date',
+        'max_score',
+        'created_by',
+    ];
 
     protected $casts = [
         'due_date' => 'datetime',
     ];
 
-    public function liveSession(): BelongsTo
+    // Relationships
+    public function session()
     {
         return $this->belongsTo(LiveSession::class, 'session_id');
     }
 
-    public function virtualClass(): BelongsTo
+    public function class()
     {
         return $this->belongsTo(VirtualClass::class, 'class_id');
     }
 
-    public function creator(): BelongsTo
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
-    public function submissions(): HasMany
+    public function submissions()
     {
-        return $this->hasMany(Submission::class, 'assignment_id');
+        return $this->hasMany(Submission::class);
     }
 }

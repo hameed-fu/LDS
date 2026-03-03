@@ -11,7 +11,7 @@
                 <h2 class="fw-bold text-light mb-2">{{ $exercise->title }}</h2>
                 <p class="text-secondary">
                     Lesson:
-                    <a href="{{ route('student.lesson.show', $exercise->lesson->id) }}"
+                    <a href="{{ route('student.session.show', $exercise->lesson->id) }}"
                         class="text-info text-decoration-none fw-semibold">
                         {{ $exercise->lesson->title }}
                     </a>

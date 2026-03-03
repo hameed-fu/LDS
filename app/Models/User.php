@@ -95,13 +95,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class, 'user_id');
     }
-public function isTeacherOf($classId)
-{
-    return $this->virtualClasses()->where('virtual_classes.id', $classId)->exists();
-}
+    public function isTeacherOf($classId)
+    {
+        return $this->virtualClasses()->where('virtual_classes.id', $classId)->exists();
+    }
 
-public function isEnrolledIn($classId)
-{
-    return $this->enrollments()->where('class_id', $classId)->exists();
-}
+    public function isEnrolledIn($classId)
+    {
+        return $this->enrollments()->where('class_id', $classId)->exists();
+    }
 }

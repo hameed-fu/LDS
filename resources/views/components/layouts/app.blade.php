@@ -54,19 +54,7 @@
                 </x-menu-sub>
 
                 <x-menu-separator />
-
-                {{-- Legacy Course Management (Hidden - No longer in use) --}}
-                {{-- 
-                <x-menu-sub title="Courses" icon="o-book-open">
-                    <x-menu-item title="Languages" icon="o-book-open" link="{{ route('languages.index') }}" />
-                    <x-menu-item title="Courses" icon="o-book-open" link="{{ route('course.index') }}" />
-                    <x-menu-item title="Lessons" icon="o-clipboard-document" link="{{ route('lessons.index') }}" />
-                    <x-menu-item title="Exercises" icon="o-academic-cap" link="{{ route('exercises.index') }}" />
-                </x-menu-sub>
-
-                <x-menu-separator />
-                --}}
-
+ 
                 {{-- Quiz Management --}}
                 <x-menu-sub title="Quizzes" icon="o-question-mark-circle">
                     <x-menu-item title="Quizzes" icon="o-clipboard-document-check" link="{{ route('quizzes.index') }}" />
@@ -85,7 +73,7 @@
                     <x-menu-item title="Submissions" icon="o-arrow-up-tray" link="{{ route('submissions.index') }}" />
                     <x-menu-item title="Attendance" icon="o-check-circle" link="{{ route('attendance.index') }}" />
                     <x-menu-item title="Study Groups" icon="o-users" link="{{ route('study-groups.index') }}" />
-                    <x-menu-item title="Notifications" icon="o-bell" link="{{ route('notifications.index') }}" />
+                    {{-- <x-menu-item title="Notifications" icon="o-bell" link="{{ route('notifications.index') }}" /> --}}
                 </x-menu-sub>
             </x-menu>
         </x-slot:sidebar>

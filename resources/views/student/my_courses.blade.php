@@ -65,7 +65,7 @@
                                    class="btn btn-sm btn-outline-primary">View Details</a>
 
                                 @if($progress < 100 && $totalSessions > 0)
-                                    <a href="{{ route('student.course.continue', $virtualClass->id) }}" 
+                                    <a href="{{ route('student.course.show', $virtualClass->id) }}" 
                                        class="btn btn-sm btn-success">Continue</a>
                                 @elseif($totalSessions === 0)
                                     <span class="badge bg-warning">No Sessions Yet</span>

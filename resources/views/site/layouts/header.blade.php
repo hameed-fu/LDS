@@ -17,6 +17,12 @@
                     <a href="{{ route('site.classes') }}"
                         class="{{ request()->routeIs('site.classes') ? 'active' : '' }}">Virtual Classes</a>
                 </li>
+
+                <li>
+                    <a href="{{ route('site.classes') }}"
+                        class="{{ request()->routeIs('site.classes') ? 'active' : '' }}">Virtual Classes</a>
+                </li>
+                
                 <li>
                     <a href="{{ route('contact') }}"
                         class="{{ request()->routeIs('contact') ? 'active' : '' }}">Contact</a>
@@ -60,7 +66,7 @@
                         {{-- My Courses --}}
                         <li>
                             <a class="dropdown-item" href="{{ route('student.my_courses') }}">
-                                <i class="bi bi-journal-text me-1"></i> My Courses
+                                <i class="bi bi-journal-text me-1"></i> My (Courses) Classes
                             </a>
                         </li>
                         <li>
@@ -69,11 +75,7 @@
                             </a>
                         </li>
 
-                        <li>
-                            <a class="dropdown-item" href="{{ route('student.certificates') }}">
-                                <i class="bi bi-journal-text me-1"></i> My Certificates
-                            </a>
-                        </li>
+                       
                         <li>
                             <hr class="dropdown-divider">
                         </li>

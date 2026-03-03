@@ -7,25 +7,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Submission extends Model
 {
-    protected $fillable = ['assignment_id', 'student_id', 'submission_text', 'file_url', 'submitted_at', 'score', 'feedback', 'status', 'graded_by', 'graded_at'];
+    protected $fillable = [
+        'assignment_id',
+        'student_id',
+        'file_path',
+        'submitted_at',
+        'score',
+        'feedback',
+        'status',
+    ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
-        'graded_at' => 'datetime',
     ];
 
-    public function assignment(): BelongsTo
+    public function assignment()
     {
         return $this->belongsTo(Assignment::class);
     }
 
-    public function student(): BelongsTo
+    public function student()
     {
         return $this->belongsTo(User::class, 'student_id');
-    }
-
-    public function gradedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'graded_by');
     }
 }

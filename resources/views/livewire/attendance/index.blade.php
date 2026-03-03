@@ -35,7 +35,7 @@ new class extends Component {
 <div class="min-h-screen bg-gray-50 p-6">
     <x-header title="Attendance" subtitle="Monitor class attendance" separator />
 
-    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    {{-- <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <x-select label="Filter by Status" wire:model.live="status" :options="[
             ['value' => '', 'label' => 'All'],
             ['value' => 'present', 'label' => 'Present'],
@@ -43,7 +43,7 @@ new class extends Component {
             ['value' => 'late', 'label' => 'Late'],
             ['value' => 'excused', 'label' => 'Excused'],
         ]" />
-    </div>
+    </div> --}}
 
     <x-card shadow class="overflow-hidden">
         <table class="w-full">
@@ -54,7 +54,6 @@ new class extends Component {
                     <th class="px-6 py-3 text-left">Date</th>
                     <th class="px-6 py-3 text-left">Session</th>
                     <th class="px-6 py-3 text-left">Status</th>
-                    <th class="px-6 py-3 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y">
@@ -73,9 +72,7 @@ new class extends Component {
                                 @endif
                             ">{{ ucfirst($record->status) }}</span>
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <a href="#" class="text-blue-600 hover:text-blue-900 text-sm">Edit</a>
-                        </td>
+                         
                     </tr>
                 @empty
                     <tr>

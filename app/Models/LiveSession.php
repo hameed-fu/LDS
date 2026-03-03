@@ -47,6 +47,10 @@ class LiveSession extends Model
     {
         return $this->hasMany(Attendance::class, 'session_id');
     }
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'session_id');
+    }
 
     public function assignments(): HasMany
     {

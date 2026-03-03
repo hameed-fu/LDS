@@ -107,7 +107,7 @@
                                 </a>
 
                                 @if ($progress < 100 && $totalSessions > 0)
-                                    <a href="{{ route('student.course.continue', $virtualClass->id) }}"
+                                    <a href="{{ route('student.course.show', $virtualClass->id) }}"
                                         class="btn btn-sm btn-success">
                                         Continue
                                     </a>

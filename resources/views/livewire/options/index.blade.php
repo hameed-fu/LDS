@@ -23,17 +23,10 @@ new class extends Component {
     #--------------------------------------------------
     # Queries
     #--------------------------------------------------
-   public function questionsWithOptions()
-{
-    return Question::with('options')
-        ->whereHas('options') 
-        ->when(
-            $this->search,
-            fn(Builder $q) => $q->where('question_text', 'like', "%$this->search%")
-        )
-        ->paginate(10);
-}
-
+    public function questionsWithOptions()
+    {
+        return Question::with('options')->whereHas('options')->when($this->search, fn(Builder $q) => $q->where('question_text', 'like', "%$this->search%"))->paginate(10);
+    }
 
     public function questions()
     {
@@ -64,40 +57,71 @@ new class extends Component {
         $this->optionsForm = array_values($this->optionsForm);
     }
 
-    public function save(): void
-    {
-        $this->validate([
-            'questionId' => 'required|exists:questions,id',
-            'optionsForm.*.option_text' => 'required|string|min:1',
-            'optionsForm.*.is_correct' => 'boolean',
-        ]);
+  public function save(): void
+{
+    $this->validate([
+        'questionId' => 'required|exists:questions,id',
+        'optionsForm.*.option_text' => 'required|string|min:1',
+        'optionsForm.*.is_correct' => 'boolean',
+    ]);
 
-        foreach ($this->optionsForm as $opt) {
-            Option::create([
-                'question_id' => $this->questionId,
+    $question = Question::with('options')->findOrFail($this->questionId);
+
+    // Collect IDs from form (existing options)
+    $existingIds = collect($this->optionsForm)
+        ->pluck('id')
+        ->filter()
+        ->toArray();
+
+    // Delete removed options
+    $question->options()
+        ->whereNotIn('id', $existingIds)
+        ->delete();
+
+    foreach ($this->optionsForm as $opt) {
+
+        if (!empty($opt['id'])) {
+
+            // Update existing option
+            Option::where('id', $opt['id'])->update([
                 'option_text' => $opt['option_text'],
-                'is_correct' => $opt['is_correct'],
+                'is_correct'  => $opt['is_correct'],
+            ]);
+
+        } else {
+
+            // Create new option
+            $question->options()->create([
+                'option_text' => $opt['option_text'],
+                'is_correct'  => $opt['is_correct'],
             ]);
         }
-
-        $this->resetForm();
-        $this->myModal = false;
-        $this->success(title: 'Options saved!');
     }
 
-    public function edit($questionId): void
-{
-    $question = Question::with('options')->findOrFail($questionId);
+    $this->resetForm();
+    $this->myModal = false;
 
-    $this->questionId = $question->id;
-    $this->optionsForm = $question->options->map(fn($opt) => [
-        'option_text' => $opt->option_text,
-        'is_correct'  => (bool) $opt->is_correct,
-        'id'          => $opt->id, // keep ID for updating
-    ])->toArray();
-
-    $this->myModal = true;
+    $this->success(title: 'Options updated successfully!');
 }
+
+    public function edit($questionId): void
+    {
+        $question = Question::with('options')->findOrFail($questionId);
+
+        $this->questionId = $question->id;
+
+        $this->optionsForm = $question->options
+            ->map(function ($opt) {
+                return [
+                    'id' => $opt->id,
+                    'option_text' => $opt->option_text,
+                    'is_correct' => (bool) $opt->is_correct,
+                ];
+            })
+            ->toArray();
+
+        $this->myModal = true;
+    }
 
     public function delete($id): void
     {
@@ -154,20 +178,24 @@ new class extends Component {
                                 @foreach ($q->options as $opt)
                                     <li class="flex items-center gap-2">
                                         <span>{{ $opt->option_text }}</span>
+
                                         @if ($opt->is_correct)
                                             <x-badge label="Correct" class="badge-success" />
                                         @else
                                             <x-badge label="Wrong" class="badge-error" />
                                         @endif
-
-                                        <!-- Actions -->
-                                        <x-button sm icon="o-pencil" class="btn-ghost btn-sm"
-                                            wire:click="edit({{ $opt->id }})" />
-                                        <x-button sm icon="o-trash" class="btn-error btn-sm"
-                                            wire:click="delete({{ $opt->id }})"
-                                            onclick="return confirm('Are you sure?')" />
                                     </li>
                                 @endforeach
+
+                                <!-- Move edit button OUTSIDE options loop -->
+                                <div class="mt-2 flex gap-2">
+                                    <x-button sm icon="o-pencil" class="btn-ghost btn-sm"
+                                        wire:click="edit({{ $q->id }})" />
+
+                                    <x-button sm icon="o-trash" class="btn-error btn-sm"
+                                        wire:click="deleteQuestion({{ $q->id }})"
+                                        onclick="return confirm('Delete question and all options?')" />
+                                </div>
                             </ul>
                         </td>
                     </tr>

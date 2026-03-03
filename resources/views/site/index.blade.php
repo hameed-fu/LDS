@@ -102,7 +102,7 @@
         </div>
       </div>
 
-    </section><!-- /Courses Hero Section -->
+    </section> 
 
     <!-- Featured Courses Section -->
     <section id="featured-courses" class="featured-courses section">
@@ -115,7 +115,7 @@
 
       @include('site.partials.course-list', ['classes' => $classes])
 
-    </section><!-- /Featured Courses Section -->
+    </section> 
 
   
 @endsection

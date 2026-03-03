@@ -37,13 +37,17 @@ new class extends Component {
 
     // Dropdown for quizzes
     public function quizzes()
-    {
-        return Quiz::select('id', 'title as name')
-            ->get()
-            ->map(fn($q) => ['id' => $q->id, 'name' => $q->name])
-            ->prepend(['id' => '', 'name' => 'Please select'])
-            ->toArray();
-    }
+{
+    return Quiz::whereDoesntHave('questions')
+        ->select('id', 'title')
+        ->get()
+        ->map(fn ($quiz) => [
+            'id' => $quiz->id,
+            'name' => $quiz->title
+        ])
+        ->prepend(['id' => '', 'name' => 'Please select'])
+        ->toArray();
+}
 
     // Open create modal
     public function create(): void
@@ -68,9 +72,9 @@ new class extends Component {
         $data = $this->validate([
             'quiz_id' => 'required|exists:quizzes,id',
             'question_text' => 'required|string|min:3',
-            'question_type' => 'required|in:mcq,true_false,short_answer',
+            // 'question_type' => 'required|in:mcq,true_false,short_answer',
         ]);
-
+        $data['question_type'] = 'mcq'; // Defaulting to MCQ for now
         $question = $this->questionId ? Question::findOrFail($this->questionId) : new Question();
         $question->fill($data)->save();
 
@@ -137,8 +141,10 @@ new class extends Component {
     <x-modal wire:model="myModal" title="{{ $questionId ? 'Edit Question' : 'Create Question' }}">
         <x-select label="Quiz" wire:model="quiz_id" :options="$quizzes" />
         <x-input label="Question Text" wire:model.defer="question_text" />
-        <x-select label="Question Type" wire:model="question_type"
-            :options="[['id' => '-', 'name' => 'Please select'],['id' => 'mcq', 'name' => 'MCQ'], ['id' => 'true_false', 'name' => 'True/False'], ['id' => 'short_answer', 'name' => 'Short Answer']]" />
+        {{-- <x-select label="Question Type" wire:model="question_type"
+            :options="[['id' => '-', 'name' => 'Please select'],['id' => 'mcq', 'name' => 'MCQ'], ['id' => 'true_false', 'name' => 'True/False'], ['id' => 'short_answer', 'name' => 'Short Answer']]" /> --}}
+
+        
 
         <x-slot:actions>
             <x-button label="Cancel" @click="$wire.myModal = false" />

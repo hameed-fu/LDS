@@ -65,10 +65,10 @@
 
                                                             <div
                                                                 class="list-group-item d-flex justify-content-between align-items-center
-                    rounded mb-2
-                    @if ($isCorrect) list-group-item-success
-                    @elseif($isSelected && !$isCorrect) list-group-item-danger
-                    @else bg-light @endif">
+                                                        rounded mb-2
+                                                        @if ($isCorrect) list-group-item-success
+                                                        @elseif($isSelected && !$isCorrect) list-group-item-danger
+                                                        @else bg-light @endif">
 
                                                                 <span>{{ $option->option_text }}</span>
 

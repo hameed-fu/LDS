@@ -11,8 +11,22 @@ class MeetingController extends Controller
     public function join(LiveSession $session)
     {
         $virtualClass = $session->virtualClass;
+        $user = auth()->user();
+        $alreadyMarked = \App\Models\Attendance::where('session_id', $session->id)
+            ->where('student_id', $user->id)
+            ->exists();
 
-        return view('site.meeting', compact('session', 'virtualClass')); 
+        if (!$alreadyMarked) {
+            \App\Models\Attendance::create([
+                'session_id' => $session->id,
+                'class_id'   => $session->class_id,
+                'student_id' => $user->id,
+                'date'       => now()->toDateString(),
+                'status'     => 'present',
+                'timestamp'  => now(),
+            ]);
+        }
+        return view('site.meeting', compact('session', 'virtualClass'));
     }
 
 

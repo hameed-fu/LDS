@@ -181,6 +181,34 @@
                                             @endif
                                         </div>
                                     </div>
+                                    <div>
+                                        @if ($session->quizzes->count())
+                                            <div class="mt-5">
+                                                <h4 class="fw-semibold mb-3 text-dark">
+                                                    <i class="bi bi-question-circle text-warning me-2"></i> Lesson Quizzes
+                                                </h4>
+
+                                                @foreach ($session->quizzes as $quiz)
+                                                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                                        <div
+                                                            class="card-body d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <h5 class="fw-bold text-dark mb-1">{{ $quiz->title }}</h5>
+                                                                <small class="text-muted">
+                                                                    {{ $quiz->questions->where('options', '!=', null)->filter(fn($q) => $q->options->count() > 0)->count() }}
+                                                                    Questions
+                                                                </small>
+                                                            </div>
+                                                            <a href="{{ route('student.quiz.start', $quiz->id) }}"
+                                                                class="btn btn-warning text-dark rounded-pill px-4">
+                                                                <i class="bi bi-pencil-square me-1"></i> Attempt Quiz
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
 
                                     <div class="d-flex flex-column align-items-end gap-2">
                                         @if ($isLive)
@@ -189,7 +217,8 @@
                                             </span>
                                             <div class="d-flex gap-2 mt-1">
                                                 @if ($session->id)
-                                                    <a href="{{ route('meeting', $session->meeting_code) }}" target="_blank"
+                                                    <a href="{{ route('meeting', $session->meeting_code) }}"
+                                                        target="_blank"
                                                         class="btn btn-sm btn-danger rounded-pill px-3 join-btn">
                                                         <i class="bi bi-camera-video me-1"></i> Join Now
                                                     </a>
@@ -252,6 +281,11 @@
 
                                             </div>
                                         @endif
+                                    </div>
+                                    <div>
+                                        <a href="{{ route('student.session.show', $session->id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="bi bi-play-circle me-1"></i> View Session
+                                        </a>
                                     </div>
 
                                 </div>
@@ -368,7 +402,7 @@
                             } else {
                                 const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
                                 const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 *
-                                60));
+                                    60));
                                 const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
 
                                 countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s`;

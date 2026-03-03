@@ -21,6 +21,9 @@ class VirtualClass extends Model
         return $this->hasMany(ClassEnrollment::class, 'class_id');
     }
 
+    public function quizzes(): HasMany {
+        return $this->hasMany(Quiz::class);
+    }
     public function liveSessions(): HasMany
     {
         return $this->hasMany(LiveSession::class, 'class_id');
@@ -36,10 +39,7 @@ class VirtualClass extends Model
         return $this->hasMany(Assignment::class, 'class_id');
     }
 
-    public function quizzes(): HasMany
-    {
-        return $this->hasMany(Quiz::class, 'class_id');
-    }
+   
 
     public function studyGroups(): HasMany
     {
