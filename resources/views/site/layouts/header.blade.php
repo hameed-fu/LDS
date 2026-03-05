@@ -19,8 +19,8 @@
                 </li>
 
                 <li>
-                    <a href="{{ route('site.classes') }}"
-                        class="{{ request()->routeIs('site.classes') ? 'active' : '' }}">Virtual Classes</a>
+                    <a href="{{ route('student.groups.index') }}"
+                        class="{{ request()->routeIs('student.groups.index') ? 'active' : '' }}">Study Groups</a>
                 </li>
                 
                 <li>
@@ -72,6 +72,11 @@
                         <li>
                             <a class="dropdown-item" href="{{ route('student.my_quiz_attempts') }}">
                                 <i class="bi bi-question me-1"></i> My Quizes
+                            </a>
+                        </li>
+                         <li>
+                            <a class="dropdown-item" href="{{ route('student.my_groups') }}">
+                                <i class="bi bi-journal-text me-1"></i> My Study Groups
                             </a>
                         </li>
 

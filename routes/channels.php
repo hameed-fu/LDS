@@ -17,3 +17,7 @@ Broadcast::channel('webrtc.room.{roomId}', function ($user, $roomId) {
 Broadcast::channel('webrtc.{room}', function ($user, $room) {
     return ['id' => $user->id, 'name' => $user->name];
 });
+
+Broadcast::channel('group.{groupId}', function ($user, $groupId) {
+    return true;
+});

@@ -675,45 +675,45 @@ class StudentController extends Controller
 
 
     public function submitAssignment(Request $request, $assignmentId)
-{
-    $assignment = Assignment::findOrFail($assignmentId);
+    {
+        $assignment = Assignment::findOrFail($assignmentId);
 
-    $existingSubmission = Submission::where('assignment_id', $assignment->id)
-        ->where('student_id', auth()->id())
-        ->first();
+        $existingSubmission = Submission::where('assignment_id', $assignment->id)
+            ->where('student_id', auth()->id())
+            ->first();
 
-    
-    if ($existingSubmission && $existingSubmission->status !== 'late') {
-        return back()->with('error', 'You have already submitted this assignment.');
+
+        if ($existingSubmission && $existingSubmission->status !== 'late') {
+            return back()->with('error', 'You have already submitted this assignment.');
+        }
+
+        $request->validate([
+            'file' => 'required|file|max:10240',
+        ]);
+
+        $isLate = false;
+
+        if ($assignment->due_date && now()->greaterThan($assignment->due_date)) {
+            $isLate = true;
+        }
+
+        $filePath = $request->file('file')
+            ->store('assignments', 'public');
+
+        Submission::updateOrCreate(
+            [
+                'assignment_id' => $assignment->id,
+                'student_id' => auth()->id(),
+            ],
+            [
+                'file_path' => $filePath,
+                'submitted_at' => now(),
+                'status' => $isLate ? 'late' : 'submitted',
+            ]
+        );
+
+        return back()->with('success', 'Assignment submitted successfully.');
     }
-
-    $request->validate([
-        'file' => 'required|file|max:10240',
-    ]);
-
-    $isLate = false;
-
-    if ($assignment->due_date && now()->greaterThan($assignment->due_date)) {
-        $isLate = true;
-    }
-
-    $filePath = $request->file('file')
-        ->store('assignments', 'public');
-
-    Submission::updateOrCreate(
-        [
-            'assignment_id' => $assignment->id,
-            'student_id' => auth()->id(),
-        ],
-        [
-            'file_path' => $filePath,
-            'submitted_at' => now(),
-            'status' => $isLate ? 'late' : 'submitted',
-        ]
-    );
-
-    return back()->with('success', 'Assignment submitted successfully.');
-}
     /**
      * PDF Generation using Dompdf for virtual class certificate
      */
@@ -737,4 +737,6 @@ class StudentController extends Controller
 
         return asset('storage/' . $fileName);
     }
+ 
+
 }

@@ -9,7 +9,7 @@
 </title>
   <meta name="description" content="">
   <meta name="keywords" content="">
-@vite(['resources/js/app.js'])
+
 
   <!-- Favicons -->
   <link href="{{ asset('assets/img/favicon.png') }}" rel="icon">
@@ -39,7 +39,7 @@
   <main class="main">
 
     @yield('content')
-
+@vite(['resources/js/app.js'])
   </main>
 
   <footer id="footer" class="footer accent-background">
@@ -97,7 +97,7 @@
       <p>© <span>Copyright</span> <strong class="px-1 sitename">Learner</strong> <span>All Rights Reserved</span></p>
       <div class="credits">
         
-        Designed by <a href="#">Rehana</a>
+        Designed by <a href="#">Your Name</a>
       </div>
     </div>
 

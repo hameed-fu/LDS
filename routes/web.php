@@ -7,6 +7,7 @@ use App\Http\Controllers\CodeRunController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudyGroupController;
 use App\Http\Controllers\WebRTCController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -44,7 +45,7 @@ Route::post('/webrtc/signal', [WebRTCController::class, 'signal']);
 Route::post('/webrtc/join', [WebRTCController::class, 'join']);
 Route::post('/webrtc/leave', [WebRTCController::class, 'leave']);
 Route::post('/webrtc/chat', [WebRTCController::class, 'chat']);
- 
+
 
 
 Route::get('/webrtc/test', function (\Illuminate\Http\Request $request) {
@@ -57,30 +58,45 @@ Route::get('/webrtc/test', function (\Illuminate\Http\Request $request) {
 
 
 
-Route::middleware(['auth'])->group(function () {
+Route::prefix('/student')->middleware(['auth'])->group(function () {
     // Dashboard & Courses
-    Route::get('/student/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
-    Route::get('/student/my-courses', [StudentController::class, 'myCourses'])->name('student.my_courses');
-    Route::get('/student/quiz-attempts', [StudentController::class, 'myQuizAttempts'])->name('student.my_quiz_attempts');
-    Route::get('/student/class/{class_id}', [StudentController::class, 'showCourse'])->name('student.course.show');
-    Route::get('/student/class/{class}/continue', [StudentController::class, 'continueCourse'])->name('student.course.continue');
-    Route::get('/student/session/{session}', [StudentController::class, 'sessionShow'])->name('student.session.show');
+    Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('student.dashboard');
+    Route::get('/my-courses', [StudentController::class, 'myCourses'])->name('student.my_courses');
+    Route::get('/quiz-attempts', [StudentController::class, 'myQuizAttempts'])->name('student.my_quiz_attempts');
+    Route::get('/class/{class_id}', [StudentController::class, 'showCourse'])->name('student.course.show');
+    Route::get('/class/{class}/continue', [StudentController::class, 'continueCourse'])->name('student.course.continue');
+    Route::get('/session/{session}', [StudentController::class, 'sessionShow'])->name('student.session.show');
 
 
     // Quizzes
-    Route::get('/student/quiz/{quiz}', [StudentController::class, 'quizShow'])->name('student.quiz.show');
-    Route::get('/student/quiz/{quiz}/start', [StudentController::class, 'quizStart'])->name('student.quiz.start');
-    Route::post('/student/quiz/{quiz}/attempt', [StudentController::class, 'submitQuiz'])->name('student.quiz.attempt');
+    Route::get('/quiz/{quiz}', [StudentController::class, 'quizShow'])->name('student.quiz.show');
+    Route::get('/quiz/{quiz}/start', [StudentController::class, 'quizStart'])->name('student.quiz.start');
+    Route::post('/quiz/{quiz}/attempt', [StudentController::class, 'submitQuiz'])->name('student.quiz.attempt');
 
-    Route::get('/student/assignment/{assignment}', [StudentController::class, 'showAssignment'])
-    ->name('student.assignment.show');
+    Route::get('/assignment/{assignment}', [StudentController::class, 'showAssignment'])
+        ->name('student.assignment.show');
 
-Route::post('/student/assignment/{assignment}/submit', [StudentController::class, 'submitAssignment'])
-    ->name('student.assignment.submit');
+    Route::post('/assignment/{assignment}/submit', [StudentController::class, 'submitAssignment'])
+        ->name('student.assignment.submit');
+
+
+
+
+
+    Route::get('/groups', [StudyGroupController::class, 'index'])->name('student.groups.index');
+    Route::get('/my-groups', [StudyGroupController::class, 'myStudyGroups'])->name('student.my_groups');
+    Route::post('/groups/create', [StudyGroupController::class, 'store'])->name('student.groups.create');
+    Route::post('/groups/{group}/join', [StudyGroupController::class, 'join'])->name('student.groups.join');
+    Route::get('/groups/{group}', [StudyGroupController::class, 'show'])->name('student.groups.show');
+    Route::post('/groups/{group}/message', [StudyGroupController::class, 'sendMessage'])->name('student.groups.sendMessage');
+    Route::post('/groups/{group}/typing', [StudyGroupController::class, 'typing']);
+
+    Route::get('/session/{session}/download', [StudentController::class, 'downloadSessionPdf'])
+        ->name('student.session.download');
 });
 
-Route::get('/student/session/{session}/download', [StudentController::class, 'downloadSessionPdf'])
-    ->name('student.session.download');
+
+
 
 
 // end student routes

@@ -7,15 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GroupMessage extends Model
 {
-    protected $fillable = ['group_id', 'user_id', 'message', 'timestamp'];
+    protected $fillable = ['group_id', 'user_id', 'message'];
 
     protected $casts = [
         'timestamp' => 'datetime',
     ];
 
-    public function studyGroup(): BelongsTo
+    public function group()
     {
-        return $this->belongsTo(StudyGroup::class, 'group_id');
+        return $this->belongsTo(StudyGroup::class);
     }
 
     public function user(): BelongsTo

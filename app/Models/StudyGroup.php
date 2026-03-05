@@ -3,30 +3,47 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudyGroup extends Model
 {
-    protected $fillable = ['name', 'description', 'class_id', 'created_by', 'max_members'];
+    protected $fillable = [
+        'name',
+        'description',
+        'class_id',
+        'created_by',
+        'max_members'
+    ];
 
-    public function virtualClass(): BelongsTo
+    public function members()
     {
-        return $this->belongsTo(VirtualClass::class, 'class_id');
+        return $this->belongsToMany(
+            User::class,
+            'group_members',
+            'group_id',
+            'user_id'
+        );
     }
 
-    public function creator(): BelongsTo
+
+
+    public function messages()
+    {
+        return $this->hasMany(GroupMessage::class, 'group_id');
+    }
+
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function members(): HasMany
+    /* FIXED RELATIONSHIP */
+    public function virtualClass()
     {
-        return $this->hasMany(GroupMember::class, 'group_id');
+        return $this->belongsTo(VirtualClass::class, 'class_id');
     }
 
-    public function messages(): HasMany
+    public function isFull()
     {
-        return $this->hasMany(GroupMessage::class, 'group_id');
+        return $this->members()->count() >= $this->max_members;
     }
 }

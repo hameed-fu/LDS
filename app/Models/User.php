@@ -104,4 +104,30 @@ class User extends Authenticatable
     {
         return $this->enrollments()->where('class_id', $classId)->exists();
     }
+
+
+    public function studyGroups()
+    {
+        return $this->belongsToMany(
+            StudyGroup::class,
+            'group_members',
+            'user_id',
+            'group_id'
+        )->withPivot('role')->withTimestamps();
+    }
+
+    public function createdGroups()
+    {
+        return $this->hasMany(StudyGroup::class, 'created_by');
+    }
+
+   public function classes()
+{
+    return $this->belongsToMany(
+        VirtualClass::class,
+        'enrollments',
+        'student_id',
+        'class_id'
+    );
+}
 }
